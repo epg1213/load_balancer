@@ -1,6 +1,10 @@
 {
-  "ip": "192.168.100.32",
+  "ip": "192.168.100.31",
   "port": 8000,
+  "_active_health_check_interval": 5,
+  "active_health_check_path": "/healthcheck",
+  "_rate_limit_window_size": 1,
+  "max_requests_per_window": 5,
   "servers": [
     { "ip": "127.0.0.1", "port": 8001 },
     { "ip": "127.0.0.1", "port": 8002 },
