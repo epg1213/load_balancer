@@ -3,6 +3,7 @@ use actix_proxy::{IntoHttpResponse, SendRequestError};
 use awc::Client;
 use std::sync::Mutex;
 mod balancer;
+mod config;
 
 #[get("/{url:.*}")]
 async fn proxy( app_balancer: web::Data<Mutex<balancer::Balancer>>,
@@ -35,7 +36,7 @@ match load_balancer.get_server(client_address).await {
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
-let config = balancer::Config::new();
+let config = config::Config::new();
 let load_balancer = web::Data::new(Mutex::new(balancer::Balancer::new(config.clone())));
 HttpServer::new(move|| {
     App::new()

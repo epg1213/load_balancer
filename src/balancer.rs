@@ -1,45 +1,16 @@
-use serde_json;
-use serde::Deserialize;
-use std::fs::File;
-use std::io::BufReader;
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Server {
-  pub ip: String,
-  pub port: u16,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Config {
-  pub ip: String,
-  pub port: u16,
-  _active_health_check_interval: u64,
-  active_health_check_path: String,
-  _rate_limit_window_size: u64,
-  max_requests_per_window: u64,
-  pub servers: Vec<Server>,
-}
-
-impl Config {
-  pub fn new() -> Config {
-    let file = File::open("config.json").expect("Could not read config file, please add a config.json file.");
-    let reader = BufReader::new(file);
-    serde_json::from_reader(reader).expect("Could not parse config file.")
-  }
-}
 use std::collections::HashMap;
 extern crate reqwest;
-
+use crate::config;
 
 pub struct Balancer {
-  pub config: Config,
+  pub config: config::Config,
   pub servers_count: u64,
   pub next: usize,
   pub client_map: HashMap<String, u64>,
 }
 
 impl Balancer {
-  pub fn new(config: Config) -> Balancer {
+  pub fn new(config: config::Config) -> Balancer {
     Balancer{
       config: config.clone(),
       servers_count: config.servers.len() as u64,
@@ -48,7 +19,7 @@ impl Balancer {
     }
   }
 
-  async fn check(&self, server: &Server) -> bool {
+  async fn check(&self, server: &config::Server) -> bool {
     match reqwest::get(format!("http://{}:{}{}", server.ip, server.port, self.config.active_health_check_path)).await {
       Ok(response) => {
         if response.status() == reqwest::StatusCode::OK {
@@ -79,7 +50,7 @@ impl Balancer {
     }
   }
 
-  pub async fn get_server(&mut self, client_address: String) -> Result<&Server, &'static str> {
+  pub async fn get_server(&mut self, client_address: String) -> Result<&config::Server, &'static str> {
     if !self.client_rate_ok(client_address){
       return Err("429 Too many Requests.");
     }
