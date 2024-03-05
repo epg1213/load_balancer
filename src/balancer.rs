@@ -1,22 +1,31 @@
 use std::collections::HashMap;
 extern crate reqwest;
 use crate::config;
-
+use std::thread::spawn;
+use std::sync::{Arc, Mutex};
+use std::thread::scope;
+use std::thread::sleep;
+use std::mem;
+use std::time::Duration;
 pub struct Balancer {
   pub config: config::Config,
   pub servers_count: u64,
   pub next: usize,
   pub client_map: HashMap<String, u64>,
+  servers: Arc<Mutex<Vec<bool>>>,
 }
 
 impl Balancer {
   pub fn new(config: config::Config) -> Balancer {
-    Balancer{
+    let balancer = Balancer{
       config: config.clone(),
       servers_count: config.servers.len() as u64,
       next: 0,
       client_map: HashMap::<String, u64>::new(),
-    }
+      servers: Arc::new(Mutex::new(Vec::<bool>::new())),
+    };
+    balancer.verify();
+    balancer
   }
 
   async fn check(&self, server: &config::Server) -> bool {
@@ -67,4 +76,39 @@ impl Balancer {
     }
     return Ok(server);
   }
+  
+  fn check_servers(&self) -> Vec<bool> {
+
+    let mut vec= Vec::<bool>::new();
+    /*for server in self.config.servers.iter()
+    {
+      vec.push(self.check(server).await);
+      
+
+    }*/
+    vec.push(true);
+    vec.push(false);
+    vec.push(true);
+    return vec;
+  }
+
+  fn verify(&self) {
+    let verify_thread = ||{
+      loop {
+        let servers_checked = self.check_servers();
+        {
+          let mut servers = self.servers.lock().expect("could not read servers"); // vérouille un thread pour pas qu'un thread modifie un autre thread
+          mem::replace(&mut *servers, servers_checked);
+          println!("{:?}", servers);
+        }
+        sleep(Duration::from_secs(self.config.active_health_check_interval));
+      }
+    };
+    
+    std::thread::scope(|scope| {
+      scope.spawn(verify_thread);
+    });
+
+  }
 }
+
