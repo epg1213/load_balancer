@@ -37,7 +37,9 @@ match load_balancer.get_server(client_address).await {
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
 let config = config::Config::new();
-let load_balancer = web::Data::new(Mutex::new(balancer::Balancer::new(config.clone())));
+let balancer = balancer::Balancer::new(config.clone());
+balancer.start_thread();
+let load_balancer = web::Data::new(Mutex::new(balancer));
 HttpServer::new(move|| {
     App::new()
     .app_data(load_balancer.clone())
