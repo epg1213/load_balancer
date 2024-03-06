@@ -14,7 +14,7 @@ let mut client_address = String::new();
 if let Some(addr) = req.peer_addr() {
     client_address = format!("{}", addr.ip());
 }
-let mut load_balancer = app_balancer.lock().unwrap();
+let mut load_balancer = app_balancer.lock().expect("could not lock balancer");
 match load_balancer.get_server(client_address).await {
     Ok(srv) => {
     let (url,) = path.into_inner();
@@ -38,7 +38,7 @@ match load_balancer.get_server(client_address).await {
 pub async fn main() -> std::io::Result<()> {
 let config = config::Config::new();
 let balancer = balancer::Balancer::new(config.clone());
-balancer.start_thread();
+balancer.start_threads();
 let load_balancer = web::Data::new(Mutex::new(balancer));
 HttpServer::new(move|| {
     App::new()

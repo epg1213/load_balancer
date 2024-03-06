@@ -15,7 +15,7 @@ pub struct Config {
   pub port: u16,
   pub active_health_check_interval: u64,
   pub active_health_check_path: String,
-  pub _rate_limit_window_size: u64,
+  pub rate_limit_window_size: u64,
   pub max_requests_per_window: u64,
   pub servers: Vec<Server>,
 }
