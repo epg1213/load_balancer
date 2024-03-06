@@ -1,5 +1,5 @@
 {
-  "ip": "192.168.1.87",
+  "ip": "192.168.99.56",
   "port": 8000,
   "active_health_check_interval": 5,
   "active_health_check_path": "/healthcheck",

@@ -2,6 +2,8 @@ use serde_json;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
+use std::path::Path;
+use std::env;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Server {
@@ -22,8 +24,35 @@ pub struct Config {
 
 impl Config {
   pub fn new() -> Config {
-    let file = File::open("config.json").expect("Could not read config file, please add a config.json file.");
+    let path = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("tests/ressources/config.json");
+    let file = File::open(path).expect("Could not open config file");
     let reader = BufReader::new(file);
     serde_json::from_reader(reader).expect("Could not parse config file.")
   }
+}
+
+#[cfg(test)]
+mod test{
+  use std::path::Path;
+  use std::env;
+  #[test]
+  fn test_new(){
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let config_path = Path::new(&manifest_dir).join("tests/ressources/config.json");
+    assert!(config_path.exists(), "le fichier dois exister"); 
+  }
+  
+}
+
+#[cfg(test)]
+mod test{
+  use std::path::Path;
+  use std::env;
+  #[test]
+  fn test_new(){
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let config_path = Path::new(&manifest_dir).join("tests/ressources/config.json");
+    assert!(config_path.exists(), "le fichier dois exister"); 
+  }
+
 }
