@@ -33,4 +33,12 @@ All done ? Starting the load balancer is then very simple (if you don't have rus
 cargo run
 ```
 
+If you are not sure how to use the code and how each function works, you can run :
+
+```
+cargo doc
+```
+
+And a bunch of web pages will be generated for you to browse locally.
+
 enjoy :)
