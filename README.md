@@ -1,10 +1,11 @@
 This project allows you to create a load balancer, which acts as a reverse proxy for a certain amount of web servers, and splits the traffic between the servers.
-If a server is down or has problems of it's own, the load balancer will take this into account and send the clients
-on other servers that are alive and well.
+
+If a server is down or has problems of it's own, the load balancer will take this into account and send the clients on other servers that are alive and well.
+
 These servers are defined in the file "tests/ressources/config.json".
 
-You should update this file with your IP address (the one from the machine that acts as load balancer),
-in the first "ip" field.
+You should update this file with your IP address (the one from the machine that acts as load balancer), in the first "ip" field.
+
 You can also define a port on this machine which will be the entry point for any client.
 
 Then, there is a part for parameters such as:
