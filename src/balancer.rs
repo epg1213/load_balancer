@@ -7,7 +7,7 @@ use std::time::Duration;
 use std::thread::sleep;
 
 pub struct Balancer {
-  pub config: config::Config,
+  pub configuration: config::Config,
   pub servers_count: u64,
   pub next: usize,
   pub client_map: Arc<Mutex<HashMap<String, u64>>>,
@@ -17,11 +17,11 @@ pub struct Balancer {
 impl Balancer {
   pub fn new(config: config::Config) -> Balancer {
     let balancer = Balancer{
-      config: config.clone(),
+      configuration: config.clone(),
       servers_count: config.servers.len() as u64,
       next: 0,
       client_map: Arc::new(Mutex::new(HashMap::<String, u64>::new())),
-      servers: Arc::new(Mutex::new(Vec::<bool>::new())),
+      servers: Arc::new(Mutex::new(vec![false; config.servers.len()])),
     };
     balancer
   }
@@ -49,7 +49,7 @@ impl Balancer {
     match client_map.get_mut(&client_address) {
       Some(count) => {
         *count+=1;
-        *count<=self.config.max_requests_per_window
+        *count<=self.configuration.max_requests_per_window
       }
       None => {
         client_map.insert(client_address.clone(), 1);
@@ -76,7 +76,7 @@ impl Balancer {
       }
       self.next=((self.next+1) as u64 % self.servers_count) as usize;
     }
-    return Ok(&self.config.servers[self.next]);
+    return Ok(&self.configuration.servers[self.next]);
   }
   
   async fn check_servers(target_servers: Vec<config::Server>, healthpath: String) -> Vec<bool> {
@@ -99,21 +99,21 @@ impl Balancer {
     }
   }
   async fn clean_clients( client_map: Arc<Mutex<HashMap<String, u64>>>, interval: u64) {
-    /*loop {
+    loop {
       {
         let mut map = client_map.lock().expect("could not read clients"); // vérouille un thread pour pas qu'un thread modifie un autre thread
-        mem::replace(&mut *map, HashMap::<String, u64>::new(),);
+        let _ = mem::replace(&mut *map, HashMap::<String, u64>::new(),);
         println!("cleaning clients");
       }
       sleep(Duration::from_secs(interval));
-    }*/
+    }
   }
 
   pub fn start_threads(&self) {
-    let target_servers = self.config.servers.clone();
+    let target_servers = self.configuration.servers.clone();
     let servers_status = self.servers.clone();
-    let interval = self.config.active_health_check_interval.clone();
-    let healthpath = self.config.active_health_check_path.clone();
+    let interval = self.configuration.active_health_check_interval.clone();
+    let healthpath = self.configuration.active_health_check_path.clone();
     tokio::spawn(async move { Balancer::verify_servers(target_servers, servers_status, interval, healthpath).await });
     /*let map = self.client_map.clone();
     let window = self.config.rate_limit_window_size.clone();
@@ -121,3 +121,44 @@ impl Balancer {
   }
 }
 
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::fs;
+  use serde_json;
+  use crate::config;
+  use mockito::Matcher;
+  use tokio;
+
+  #[test]
+    fn test_new_balancer() {
+    let config = config::Config::new();
+
+    let balancer = Balancer::new(config.clone());
+    assert_eq!(balancer.servers_count, config.servers.len() as u64);
+    assert_eq!(balancer.next, 0);
+    assert_eq!(*balancer.client_map.lock().unwrap(), HashMap::new());
+    assert_eq!(*balancer.servers.lock().unwrap(), vec![false; config.servers.len()]);
+  }
+  
+  #[tokio::test]
+  async fn test_check() {
+    let mut s = mockito::Server::new();
+    let m = s.mock("GET", "/healthcheck")
+      .with_status(200)
+      .create();
+    let mut server_url = s.url();
+    server_url = String::from(server_url.trim_start_matches("http://"));
+    let parts: Vec<&str> = server_url.split(':').collect();
+    let server = config::Server {
+        ip: parts[0].to_string(),
+        port: parts[1].parse().unwrap(),
+    };
+    let healthpath = String::from("/healthcheck");
+
+    // Testez que la fonction check renvoie true lorsque le serveur renvoie 200
+    let result = Balancer::check(&server, healthpath).await;
+    assert!(result);
+}
+}

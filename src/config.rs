@@ -43,16 +43,3 @@ mod test{
   }
   
 }
-
-#[cfg(test)]
-mod test{
-  use std::path::Path;
-  use std::env;
-  #[test]
-  fn test_new(){
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let config_path = Path::new(&manifest_dir).join("tests/ressources/config.json");
-    assert!(config_path.exists(), "le fichier dois exister"); 
-  }
-
-}
