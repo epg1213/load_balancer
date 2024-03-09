@@ -27,7 +27,7 @@ cd ..
 Once you are set with running web servers, you can add each of them in the "tests/ressources/config.json" file.
 The "servers" parameter contains a list of servers, update it with your own (ip, port).
 
-All done ? Starting the load balancer is then very simple :
+All done ? Starting the load balancer is then very simple (if you don't have rust installed, please follow https://rustup.rs/ ) :
 
 ```
 cargo run
